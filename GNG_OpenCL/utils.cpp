@@ -2,11 +2,11 @@
 
 IntStack createNewStack(unsigned int stackSize)
 {
-    IntStack* intStack = new IntStack;
+    IntStack intStack;
     for (unsigned int i = 0; i != stackSize; ++i)
-        intStack->stack[i] = stackSize - i - 1;
-    intStack->headIndex = stackSize-1;
-    return (*intStack);
+        intStack.stack[i] = stackSize - i - 1;
+    intStack.headIndex = stackSize;
+    return intStack;
 }
 
 bool IntStack_isEmpty(IntStack* intStack)
@@ -15,6 +15,8 @@ bool IntStack_isEmpty(IntStack* intStack)
         return true;
     return false;
 }
+
+
 
 int IntStack_pop(IntStack* intStack)
 {
@@ -66,3 +68,5 @@ string getFileContents(const char* fileName)
         return(std::string((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>()));
     throw(errno);
 }
+
+

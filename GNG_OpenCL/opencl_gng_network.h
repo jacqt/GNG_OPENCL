@@ -1,27 +1,38 @@
 #ifndef OPENCL_GNG_NETWORK_H
 #define OPENCL_GNG_NETWORK_H
 
-#include "opencl_utils.cl"
-
-#define NODE_CHANGE_RATE                0.05
-#define NODE_NEIGHBOR_CHANGE_RATE       0.00005
-#define LOCAL_DECREASE_RATE             0.5
-#define GLOBAL_DECREASE_RATE            0.9995
-#define AGE_MAX                         3200
-#define TIME_BETWEEN_ADDING_NODES       300
-#define MAX_NODES                       1000
-#define MAX_EDGES                       1000
-#define MAX_DIMENSION                   200
-#define MAX_NODES                       1000
-#define MAX_EDGES                       1000
-#define MAX_DIMENSION                   200
-
-#define CL_TRUE                         42
 
 struct NeuralGasNetwork;
 struct Node;
 struct NodeEdge;
+struct IntStack;
 
+typedef struct IntStack{
+    int headIndex;
+    int stack[MAX_STACK_SIZE];
+} IntStack;
+
+//Pre: stackSize < MAX_STACK_SIZE
+//Creates and returns an IntStack with the values 0,1, 2, 3, ..., (stacksize-1)
+
+bool IntStack_isEmpty(global IntStack* intStack)
+{
+    if (intStack->headIndex == -1)
+        return true;
+    return false;
+}
+
+int IntStack_pop(global IntStack* intStack)
+{
+    --intStack->headIndex;
+    return intStack->stack[intStack->headIndex + 1];
+}
+
+void IntStack_push(global IntStack* intStack, int n)
+{
+    ++intStack->headIndex;
+    intStack->stack[intStack->headIndex] = n;
+}
 typedef struct NodeEdge{
     bool isNull;
     unsigned int age;

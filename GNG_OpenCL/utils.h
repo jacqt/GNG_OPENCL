@@ -1,8 +1,6 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-#define MAX_STACK_SIZE          2000
-
 #include "general_include.h"
 
 typedef struct IntStack{

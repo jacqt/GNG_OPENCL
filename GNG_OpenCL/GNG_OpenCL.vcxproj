@@ -159,23 +159,29 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="convert_cpu_gpu_gngs.h" />
+    <ClInclude Include="cpu_gng.h" />
     <ClInclude Include="general_include.h" />
-    <ClInclude Include="gng_network.h" />
+    <ClInclude Include="gpu_gng.h" />
     <ClInclude Include="graph_algorithms.h" />
-    <ClInclude Include="opencl_gng_network.h" />
-    <Intel_OpenCL_Build_Rules Include="opencl_utils.cl">
-      <FileType>CppHeader</FileType>
-      <Device Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">1</Device>
-    </Intel_OpenCL_Build_Rules>
+    <ClInclude Include="MNIST_GNG.h" />
+    <ClInclude Include="test.h" />
     <ClInclude Include="utils.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="gng_network.cpp" />
+    <ClCompile Include="convert_cpu_gpu_gngs.cpp" />
+    <ClCompile Include="cpu_gng.cpp" />
+    <ClCompile Include="gpu_gng.cpp" />
+    <ClCompile Include="graph_algorithms.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="MNIST_GNG.cpp" />
+    <ClCompile Include="tests.cpp" />
     <ClCompile Include="utils.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Intel_OpenCL_Build_Rules Include="opencl_gng_network.cl" />
+    <Intel_OpenCL_Build_Rules Include="opencl_gng_network.cl">
+      <Device Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">1</Device>
+    </Intel_OpenCL_Build_Rules>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

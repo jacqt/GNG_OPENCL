@@ -22,10 +22,12 @@ using std::string;
 #define NODE_NEIGHBOR_CHANGE_RATE       0.00005
 #define LOCAL_DECREASE_RATE             0.5
 #define GLOBAL_DECREASE_RATE            0.9995
-#define AGE_MAX                         3200
-#define TIME_BETWEEN_ADDING_NODES       300
-#define MAX_NODES                       1000
-#define MAX_EDGES                       1000
-#define MAX_DIMENSION                   200
+#define AGE_MAX                         10000
+#define TIME_BETWEEN_ADDING_NODES       500
+#define MAX_NODES                       1024
+#define MAX_EDGES                       2048
+#define MAX_DIMENSION                   1024
+
+#define MAX_STACK_SIZE                  2100
 
 #endif
