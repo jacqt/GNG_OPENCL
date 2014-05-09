@@ -163,13 +163,22 @@ namespace CPU_serial_gng
         maxNodes = INT_MAX;
     }
 
+    NeuralGasNetwork::~NeuralGasNetwork()
+    {
+        for (int i = 0; i != edges.size(); ++i)
+            delete edges[i];
+        for (int i = 0; i != nodes.size(); ++i)
+            delete nodes[i];
+    }
+
+
     //Finds two closest nodes to a feature vector in terms of the euclidian distance
     void NeuralGasNetwork::findTwoNearest(const vector<double> &featureVector,
         unsigned int &closest,
         unsigned int &nextClosest)
     {
-        double min1 = INT_MAX;
-        double min2 = INT_MAX;
+        double min1 = DBL_MAX;
+        double min2 = DBL_MAX;
         unsigned int min1Index = 0;
         unsigned int min2Index = 0;
 

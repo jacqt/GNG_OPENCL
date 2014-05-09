@@ -45,17 +45,17 @@ namespace GPU_parallel_gng
             network->nodes[i].isNull = true;
             //set distance to negative one in order to get around problems in finding the closest node
             //to a particular feature vector
-            network->nodes[i].distance = -1; 
+            network->nodes[i].distance = FLT_MAX; 
         }
         for (unsigned int i = 0; i != MAX_EDGES; ++i)
             network->edges[i].isNull = true;
 
         //Two initial nodes
-        network->nodes[0] = Node_createNewNode(featureDimension);
-        network->nodes[1] = Node_createNewNode(featureDimension);
+        network->nodes[IntStack_pop(&network->emptyNodeIndexStack)] = Node_createNewNode(featureDimension);
+        network->nodes[IntStack_pop(&network->emptyNodeIndexStack)] = Node_createNewNode(featureDimension);
 
         //Create an edge between them
-        network->edges[0] = NodeEdge_createNewNodeEdge(0,1);
+        network->edges[IntStack_pop(&network->emptyEdgeIndexStack)] = NodeEdge_createNewNodeEdge(0,1);
 
         return network;
     }
@@ -123,6 +123,7 @@ namespace GPU_parallel_gng
         workIndexArray.shrink_to_fit();
         createMemoryBuffers(context);
         createKernels(program);
+        iterationNumber = 0;
         //Transfer the GNG to the GPU??
         queue.enqueueWriteBuffer(gngNetworkBuffer,CL_TRUE, 0, sizeOfgngNetworkBuffer, gngNetwork);
           //  sizeOfgngNetworkBuffer, gngNetwork);
@@ -148,8 +149,8 @@ namespace GPU_parallel_gng
     void NeuralGasNetworkHost::createMemoryBuffers(cl::Context &context)
     {
         sizeOfgngNetworkBuffer = sizeof(*gngNetwork);
-        sizeOfInputBuffer = sizeof(inputArray);
-        sizeOfWorkIndexBuffer = sizeof(workIndexArray);
+        sizeOfInputBuffer = sizeof(float) * inputArray.size();
+        sizeOfWorkIndexBuffer = sizeof(int) * workIndexArray.size();
 
         gngNetworkBuffer = cl::Buffer(context, CL_MEM_READ_WRITE  | CL_MEM_COPY_HOST_PTR,
             sizeOfgngNetworkBuffer, gngNetwork);
@@ -170,6 +171,7 @@ namespace GPU_parallel_gng
         findNearestNodeKernel = cl::Kernel(program, "findNearestNode");
         findTwoNearestNodeKernel = cl::Kernel(program,"findTwoNearestNode");
         findTwoLargestErrorKernel = cl::Kernel(program, "findTwoLargestError");
+        findNeighborKernel = cl::Kernel(program, "findNeighbor");
         iterate_step1_Kernel = cl::Kernel(program, "iterate_step1");
         iterate_step2_Kernel = cl::Kernel(program, "iterate_step2");
         iterate_step3_addEdge_Kernel = cl::Kernel(program, "iterate_step3_addEdge");
@@ -196,6 +198,9 @@ namespace GPU_parallel_gng
         findTwoNearestNodeKernel.setArg(0, gngNetworkBuffer);
         findTwoNearestNodeKernel.setArg(1, workIndexBuffer);
       //findTwoNearestNodeKernel.setArg(2, int spacing);
+
+        findNeighborKernel.setArg(0, gngNetworkBuffer);
+        findNeighborKernel.setArg(1, workIndexBuffer);
 
         findTwoLargestErrorKernel.setArg(0, gngNetworkBuffer);
         findTwoLargestErrorKernel.setArg(1, workIndexBuffer);
@@ -305,6 +310,7 @@ namespace GPU_parallel_gng
 
         if (iterationNumber % TIME_BETWEEN_ADDING_NODES == 0) // Add a node
         {
+            cout << iterationNumber << endl;
             //No longer need results from workIndexArray:
             queue.enqueueNDRangeKernel(
                 resetWorkIndexArrayKernel, 
@@ -312,7 +318,7 @@ namespace GPU_parallel_gng
                 cl::NDRange(MAX_NODES),
                 cl::NullRange);
 
-            //Find the two nodes with the highest error
+            //Find the two nodes with the highest error and are neighbors
             int spacing = 2;
             int range = MAX_NODES/4;
             while (spacing < MAX_NODES)
@@ -326,8 +332,13 @@ namespace GPU_parallel_gng
                 spacing *= 2;
                 range = range/2;
             }
+            queue.enqueueNDRangeKernel(
+                findNeighborKernel,
+                cl::NullRange,
+                cl::NDRange(MAX_EDGES),
+                cl::NullRange);
 
-            cout << "ADDING" << endl;
+            //cout << "ADDING" << endl;
             queue.enqueueNDRangeKernel(
                 iterate_step3_addNode_Kernel,
                 cl::NullRange,
@@ -341,13 +352,17 @@ namespace GPU_parallel_gng
     void NeuralGasNetworkHost::foo(cl::CommandQueue &queue)
     {
         queue.enqueueReadBuffer(gngNetworkBuffer, CL_TRUE, 0, sizeOfgngNetworkBuffer,gngNetwork);
+        cout << "node stack: " << gngNetwork->emptyNodeIndexStack.headIndex;
+        cout << "   edge stack: " << gngNetwork->emptyEdgeIndexStack.headIndex << endl;
+        /*
         for (int i = 0; i != MAX_NODES; ++i)
         {
             Node* node = &gngNetwork->nodes[i];
             if (node->isNull)
                 continue;
-            cout << node->referenceVector[0] << ", " << node->referenceVector[1] << endl;
+            cout << node->referenceVector[0] << ", " << node->referenceVector[1] << node->referenceVector[300] << endl;
         }
+        */
     }
 
     void NeuralGasNetworkHost::trainNetwork(

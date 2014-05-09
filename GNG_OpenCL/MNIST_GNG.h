@@ -6,6 +6,7 @@
 #include "cpu_gng.h"
 #include "graph_algorithms.h"
 #include "convert_cpu_gpu_gngs.h"
+#include "classify_gng.h"
 
 void readMNIST(vector<double*> &inputs, vector<int*> &targets, int &inputSize);
 void readMNISTTest(vector<double*> &inputs, vector<int*> &targets, int &inputSize);

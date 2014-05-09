@@ -1,14 +1,14 @@
-#define NODE_CHANGE_RATE                0.03
-#define NODE_NEIGHBOR_CHANGE_RATE       0.0003
+#define NODE_CHANGE_RATE                0.005
+#define NODE_NEIGHBOR_CHANGE_RATE       0.00005
 #define LOCAL_DECREASE_RATE             0.5
 #define GLOBAL_DECREASE_RATE            0.9995
-#define AGE_MAX                         15000
-#define TIME_BETWEEN_ADDING_NODES       300
-#define MAX_NODES                       1024
-#define MAX_EDGES                       2048
+#define AGE_MAX                         10000
+
+#define MAX_NODES                       8192
+#define MAX_EDGES                       16384
 #define MAX_DIMENSION                   1024
 
-#define MAX_STACK_SIZE                  2100
+#define MAX_STACK_SIZE                  17000
 #define OPENCL_TRUE                     -124
 
 
@@ -42,8 +42,8 @@ int IntStack_pop(global IntStack* intStack)
 void IntStack_push(global IntStack* intStack, int n)
 {
     //printf("WTF? : %d\n", intStack->headIndex);
-    ++intStack->headIndex;
     intStack->stack[intStack->headIndex] = n;
+    ++intStack->headIndex;
 }
 typedef struct NodeEdge{
     bool isNull;
@@ -56,7 +56,7 @@ typedef struct Node{
     bool isNull;
     unsigned int featureDimension;
     float referenceVector[MAX_DIMENSION];
-	//NodeEdge edges[MAX_EDGES];
+    //NodeEdge edges[MAX_EDGES];
     float error;
     float distance;
 } Node;
@@ -73,14 +73,14 @@ void shiftReferenceVector(global Node* node, global float* inputVector, float ch
 {
     //printf("???: %f, %f\n", node->referenceVector[0], inputVector[0]);
     for (int i = 0; i != node->featureDimension; ++i)
-		node->referenceVector[i] += (inputVector[i] - node->referenceVector[i]) * changeRate;
+        node->referenceVector[i] += (inputVector[i] - node->referenceVector[i]) * changeRate;
 }
 
 NodeEdge NodeEdge_createEdge(
     NeuralGasNetwork* network,
-	unsigned int n1,
-	unsigned int n2,
-	unsigned int age_); //Looks for the first non empty spot
+    unsigned int n1,
+    unsigned int n2,
+    unsigned int age_); //Looks for the first non empty spot
 
 void NodeEdge_deleteEdge();
 
@@ -91,13 +91,13 @@ kernel void calculateDistance(global NeuralGasNetwork* network, global float* in
 
     if (network->nodes[index].isNull)
     {
-        network->nodes[index].distance = INT_MAX;
+        network->nodes[index].distance = FLT_MAX;
         network->nodes[index].error = 0; //for use in later stages
         return;
     }
 
     network->nodes[index].distance = 0; //Set the distance to zero
-    for (unsigned int i = 0; i < 2; ++i)// network->nodes[index].featureDimension; ++i)
+    for (unsigned int i = 0; i < network->nodes[index].featureDimension; ++i)
         network->nodes[index].distance += (network->nodes[index].referenceVector[i] - inputVector[i])
                                           * ((network->nodes[index].referenceVector[i] - inputVector[i])); 
     //printf("NODE INDEX: %d; FEATURE DIM, %d; DIST: %f; REFERNCE VECTOR[0]: %f\n", index, network->nodes[index].featureDimension, network->nodes[index].distance, inputVector[0]);
@@ -193,11 +193,22 @@ kernel void iterate_step1(
     global Node* nearestNode = &network->nodes[nearestNodeIndex];
     global Node* secondNearestNode = &network->nodes[secondNearestNodeIndex];
 
+    /*
+    for (int i = 0; i != 20; ++i)
+    {
+        if (network->nodes[i].isNull)
+            continue;
+        printf("LOL: %f\n", network->nodes[i].distance);
+    }
+    printf("REAL: %f, %f\n", nearestNode->distance, secondNearestNode->distance);
+    */
+
     //Update error of nearest node
     nearestNode->error += nearestNode->distance;
 
     //Move the nearest node, and all the nodes connected to it
     shiftReferenceVector(nearestNode, inputVector, NODE_CHANGE_RATE);
+    workIndexArray[MAX_NODES-1] = -1;
 }
 
 //Increments the age of every edge by one except if it connects the two closest edge.
@@ -234,12 +245,15 @@ kernel void iterate_step2(
         else
         {
             edge->age += 1;
+            //IntStack_push is not thread safe so we can't do this.
+            /*
             if (edge->age > AGE_MAX)
             {
                 edge->isNull = true;
                 //printf("HEYYYYYYYYYYYYYYYYYY: %d\n", index);
                 IntStack_push(&network->emptyEdgeIndexStack, index);
             }
+            */
         }
     }
 }
@@ -250,7 +264,7 @@ kernel void iterate_step3_addEdge(
     global NeuralGasNetwork* network,
     global int* workIndexArray)
 {
-    if (network->edges[workIndexArray[MAX_NODES-1]].age != 0) // no edge between two closest nodes
+    if (workIndexArray[MAX_NODES-1] == -1) // no edge between two closest nodes
     {
         int nearestNodeIndex = workIndexArray[0];
         int secondNearestNodeIndex = workIndexArray[1];
@@ -259,6 +273,17 @@ kernel void iterate_step3_addEdge(
         network->edges[nextIndex].nodeIndex1 = nearestNodeIndex;
         network->edges[nextIndex].nodeIndex2 = secondNearestNodeIndex;
         network->edges[nextIndex].age = 0;
+    }
+    //Loop through the edges and delete the ones too old.
+    for (int i = 0; i != MAX_EDGES; ++i)
+    {
+        if (network->edges[i].isNull)
+            continue;
+        if (network->edges[i].age > AGE_MAX)
+        {
+            network->edges[i].isNull = true;
+            IntStack_push(&network->emptyEdgeIndexStack, i);
+        }
     }
 }
 
@@ -303,6 +328,27 @@ kernel void findTwoLargestError(
         //printf("WORKINDEX[0].error: %f, WORKINDEX[1].error: %f \n", network->nodes[workIndexArray[0]].error, network->nodes[workIndexArray[1]].error );
     
 }
+//Finds one neighbor of a node
+kernel void findNeighbor(
+    global NeuralGasNetwork* network,
+    global int* workIndexArray)
+{
+    int index = get_global_id(0);
+    //global Node* largestErrorNode = &network->nodes[workIndexArray[0]];
+    global NodeEdge* edge = &network->edges[index];
+    if (!edge->isNull)
+    {    
+        if (edge->nodeIndex1 == workIndexArray[0] ) 
+        {
+            workIndexArray[1] = edge->nodeIndex2;
+        }
+        else if (edge->nodeIndex2 == workIndexArray[0] ) 
+        {
+            workIndexArray[1] = edge->nodeIndex1;
+        }
+    }
+}
+
 //If appropriate condition is met on the host CPU code, add a node
 //Execute before deleting nodes as the order does not affect result,
 //but it is important to maintain the state of the workIndexArray 
@@ -342,15 +388,17 @@ kernel void iterate_step3_addNode(
     int newEdgeIndex1 = IntStack_pop(&network->emptyEdgeIndexStack);
     int newEdgeIndex2 = IntStack_pop(&network->emptyEdgeIndexStack);
 
-    network->edges[newEdgeIndex1].isNull = false;
-    network->edges[newEdgeIndex1].age = 0;
+    network->edges[newEdgeIndex1].isNull= false;
+    network->edges[newEdgeIndex1].age = -1;
     network->edges[newEdgeIndex1].nodeIndex1 = newNodeIndex;
     network->edges[newEdgeIndex1].nodeIndex2 = workIndexArray[0];
 
     network->edges[newEdgeIndex2].isNull = false;
-    network->edges[newEdgeIndex2].age = 0;
+    network->edges[newEdgeIndex2].age = -1;
     network->edges[newEdgeIndex2].nodeIndex1 = newNodeIndex;
     network->edges[newEdgeIndex2].nodeIndex2 = workIndexArray[1];
+    //We set the ages to -1 so that at any given iteration there is at most one node
+    //that has edges with age = AGE_MAX, thus making the IntStack_Push(network->nodes[?]) safe
 }
 
 //No longer need the workIndexArray
@@ -379,7 +427,7 @@ kernel void iterate_step5(
     {
         network->nodes[index].isNull = true;
         network->nodes[index].distance = -1;
-        //printf("HEYYYYYYYYYYYYYYYYYY: %d\n", index);
+        //Below operation is not thread safe; but it shold be ok in most cases :)
         IntStack_push(&network->emptyNodeIndexStack, index);
     }
 }

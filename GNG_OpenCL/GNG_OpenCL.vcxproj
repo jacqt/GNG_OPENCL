@@ -159,6 +159,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="classify_gng.h" />
     <ClInclude Include="convert_cpu_gpu_gngs.h" />
     <ClInclude Include="cpu_gng.h" />
     <ClInclude Include="general_include.h" />
@@ -169,6 +170,7 @@
     <ClInclude Include="utils.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="classify_gng.cpp" />
     <ClCompile Include="convert_cpu_gpu_gngs.cpp" />
     <ClCompile Include="cpu_gng.cpp" />
     <ClCompile Include="gpu_gng.cpp" />

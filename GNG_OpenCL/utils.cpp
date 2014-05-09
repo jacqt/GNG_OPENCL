@@ -21,20 +21,20 @@ bool IntStack_isEmpty(IntStack* intStack)
 int IntStack_pop(IntStack* intStack)
 {
     --intStack->headIndex;
-    return intStack->stack[intStack->headIndex + 1];
+    return intStack->stack[intStack->headIndex];
 }
 
 void IntStack_push(IntStack* intStack, int n)
 {
-    ++intStack->headIndex;
     intStack->stack[intStack->headIndex] = n;
+    ++intStack->headIndex;
 }
 
 float getRandomFloat(float lowerbound, float upperbound)
 {
-	float f = (float) rand() / RAND_MAX;
-	f = lowerbound + f * (upperbound - lowerbound);
-	return f;
+    float f = (float) rand() / RAND_MAX;
+    f = lowerbound + f * (upperbound - lowerbound);
+    return f;
 }
 
 
@@ -70,3 +70,11 @@ string getFileContents(const char* fileName)
 }
 
 
+const std::string currentDateTime() {
+    time_t     now = time(0);
+    struct tm  tstruct;
+    char       buf[80];
+    tstruct = *localtime(&now);
+    strftime(buf, sizeof(buf), "%Y-%m-%d.%X", &tstruct);
+    return buf;
+}

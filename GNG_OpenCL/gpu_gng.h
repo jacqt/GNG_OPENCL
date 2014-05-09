@@ -134,6 +134,7 @@ namespace GPU_parallel_gng
         cl::Kernel findNearestNodeKernel;
         cl::Kernel findTwoNearestNodeKernel;
         cl::Kernel findTwoLargestErrorKernel; //Variable NDRange
+        cl::Kernel findNeighborKernel; //NDRange: MAX_EDGES
         cl::Kernel iterate_step1_Kernel; //NDRange : 1
         cl::Kernel iterate_step2_Kernel; //NDRange : MAX_EDGES
         cl::Kernel iterate_step3_addEdge_Kernel; //NDRange : 1

@@ -21,4 +21,5 @@ float getRandomFloat(float lowerbound, float upperbound);
 cl::Program createProgram(cl::Context &context, string fname, const string params = "");
 string getFileContents(const char* fileName);
 
+const std::string currentDateTime();
 #endif

@@ -27,7 +27,7 @@ namespace CPU_serial_gng
     {
         //Recursive DFS search
         node->classification = currentClass;
-		cout << "class: " << currentClass  << " #edges: " << node->edges.size() << endl;
+        //cout << "class: " << currentClass  << " #edges: " << node->edges.size() << endl;
         for (unsigned int i = 0; i != node->edges.size(); ++i)
         {
             NeuralGasNode* neighbor = node->edges[i]->neighboringNode(node);

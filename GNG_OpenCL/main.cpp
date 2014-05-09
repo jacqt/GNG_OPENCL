@@ -3,17 +3,16 @@
 #include "test.h"
 #include "MNIST_GNG.h"
 
+
 int main()
 {
     //runTest();
     trainMNIST_GNG();
-    //yolo();
-
+    yolo();
 
 
     cout << "DONE " << endl;
-    int f;
-    cout << "Enter any key and press ENTER to exit...";
-    cin >> f;
+    cout << "Press enter to exit...";
+    getchar();
     return 0;
 }

@@ -56,7 +56,8 @@ namespace CPU_serial_gng
 
         //Given a featuer space dimension, initializes two random points
         //Assume that each vector feature is spaced around [0.0, 1.0]
-        NeuralGasNetwork(unsigned int featureSpaceDimension,
+        NeuralGasNetwork(
+            unsigned int featureSpaceDimension,
             double newNodeChangeRate,
             double newNodeNeighborChangeRate,
             double newErrorDecreaseFactorLocal,
@@ -74,6 +75,8 @@ namespace CPU_serial_gng
             double newErrorDecreaseFactorGlobal,
             unsigned int newAgeMax,
             unsigned int newTimeBetweenAddingNodes);
+
+        ~NeuralGasNetwork();
 
         //Add a node to the network
         void AddNode();
